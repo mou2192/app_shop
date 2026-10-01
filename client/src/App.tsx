@@ -104,6 +104,30 @@ function App() {
     toast.success(`تم إنشاء ${invoice.id} بنجاح`);
   };
 
+  const exportBackup = () => {
+    const backup = { version: 1, exportedAt: new Date().toISOString(), clients, invoices, products: catalog };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url; link.download = `دفتر-الزهوب-نسخة-احتياطية-${new Date().toISOString().slice(0, 10)}.json`; link.click();
+    URL.revokeObjectURL(url);
+    toast.success("تم تنزيل ملف النسخة الاحتياطية");
+  };
+
+  const importBackup = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const backup = JSON.parse(String(reader.result));
+        if (!Array.isArray(backup.clients) || !Array.isArray(backup.invoices)) throw new Error("invalid");
+        setClients(backup.clients); setInvoices(backup.invoices); if (Array.isArray(backup.products)) setCatalog(backup.products);
+        toast.success("تم استرجاع بياناتك بنجاح");
+      } catch { toast.error("الملف غير صالح أو غير مكتمل"); }
+    };
+    reader.readAsText(file);
+  };
+
   if (window.location.pathname.startsWith("/invoice/")) {
     const invoiceId = window.location.pathname.split("/").pop();
     const encoded = new URLSearchParams(window.location.search).get("data");
@@ -133,7 +157,7 @@ function App() {
       </aside>
 
       <main className="main-content">
-        <header className="topbar"><button className="mobile-menu"><Menu size={20} /></button><div className="breadcrumb"><span>الرئيسية</span><ChevronLeft size={15} /><strong>{active === "overview" ? "نظرة عامة" : active === "invoices" ? "الفواتير" : active === "clients" ? "العملاء" : "الأصناف والمنتجات"}</strong></div><div className="top-actions"><button className="icon-button"><Bell size={19} /><i /></button><div className="top-avatar">م</div></div></header>
+        <header className="topbar"><button className="mobile-menu"><Menu size={20} /></button><div className="breadcrumb"><span>الرئيسية</span><ChevronLeft size={15} /><strong>{active === "overview" ? "نظرة عامة" : active === "invoices" ? "الفواتير" : active === "clients" ? "العملاء" : "الأصناف والمنتجات"}</strong></div><div className="top-actions"><button className="backup-button" onClick={exportBackup}><Copy size={14} /> حفظ ملف</button><label className="restore-button"><ArrowUpLeft size={14} /> استرجاع<input type="file" accept="application/json" onChange={e => importBackup(e.target.files?.[0])} /></label><button className="icon-button"><Bell size={19} /><i /></button><div className="top-avatar">م</div></div></header>
         <div className="page-wrap">
           {active === "overview" && <Overview clients={clients} invoices={invoices} onNew={() => setShowNewInvoice(true)} onShare={shareInvoice} onNavigate={setActive} />}
           {active === "invoices" && <Invoices invoices={filteredInvoices} clients={clients} search={search} setSearch={setSearch} onNew={() => setShowNewInvoice(true)} onShare={shareInvoice} />}
