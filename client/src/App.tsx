@@ -28,7 +28,8 @@ import "./index.css";
 
 type Client = { id: string; name: string; phone: string; balance: number; avatar: string; tone: string };
 type Product = { id: string; name: string; price: number; stock: number; category: string };
-type Invoice = { id: string; clientId: string; date: string; status: "مدفوعة" | "معلقة"; total: number; due: number; items: string[] };
+type InvoiceLine = { name: string; price: number; qty: number };
+type Invoice = { id: string; clientId: string; date: string; status: "مدفوعة" | "معلقة"; total: number; due: number; items: string[]; lines?: InvoiceLine[]; previousBalance?: number };
 
 const seedClients: Client[] = [
   { id: "c1", name: "متجر النور", phone: "967771234567", balance: 12850, avatar: "ن", tone: "violet" },
@@ -43,8 +44,8 @@ const products: Product[] = [
   { id: "p4", name: "مناديل ورقية عائلية", price: 950, stock: 218, category: "منزلية" },
 ];
 const seedInvoices: Invoice[] = [
-  { id: "INV-1048", clientId: "c1", date: "اليوم، 10:42 ص", status: "معلقة", total: 12850, due: 12850, items: ["أرز بسمتي فاخر 5 كجم", "زيت دوار الشمس 1.5 لتر"] },
-  { id: "INV-1047", clientId: "c2", date: "أمس، 04:18 م", status: "معلقة", total: 4260, due: 4260, items: ["سكر أبيض 10 كجم"] },
+  { id: "INV-1048", clientId: "c1", date: "اليوم، 10:42 ص", status: "معلقة", total: 12850, due: 12850, items: ["أرز بسمتي فاخر 5 كجم", "زيت دوار الشمس 1.5 لتر"], lines: [{ name: "أرز بسمتي فاخر 5 كجم", price: 4200, qty: 2 }, { name: "زيت دوار الشمس 1.5 لتر", price: 4450, qty: 1 }] },
+  { id: "INV-1047", clientId: "c2", date: "أمس، 04:18 م", status: "معلقة", total: 4260, due: 4260, items: ["سكر أبيض 10 كجم"], lines: [{ name: "سكر أبيض 10 كجم", price: 4260, qty: 1 }] },
   { id: "INV-1046", clientId: "c3", date: "28 سبتمبر 2026", status: "معلقة", total: 3100, due: 3100, items: ["مناديل ورقية عائلية"] },
   { id: "INV-1045", clientId: "c4", date: "27 سبتمبر 2026", status: "مدفوعة", total: 7800, due: 0, items: ["أرز بسمتي فاخر 5 كجم"] },
 ];
@@ -96,7 +97,9 @@ function App() {
       status: payment >= total ? "مدفوعة" : "معلقة",
       total,
       due: Math.max(total - payment, 0),
+      previousBalance: currentClient.balance,
       items: [currentProduct.name],
+      lines: [{ name: currentProduct.name, price: currentProduct.price, qty }],
     };
     setInvoices([invoice, ...invoices]);
     setClients(clients.map((c) => c.id === currentClient.id ? { ...c, balance: c.balance + invoice.due } : c));
@@ -173,7 +176,10 @@ function App() {
 }
 
 function PublicInvoice({ invoice, client }: { invoice: Invoice; client: Client }) {
-  return <div className="public-invoice" dir="rtl"><div className="public-card"><div className="public-brand"><div className="brand-mark"><Sparkles size={18} /></div><div><strong>دفتر الزهوب</strong><span>فاتورة إلكترونية</span></div><span className="status paid"><i />{invoice.status}</span></div><div className="public-intro"><p className="eyebrow">فاتورة رقم {invoice.id}</p><h1>مرحباً {client.name}</h1><p>شكراً لتعاملكم معنا. هذه تفاصيل فاتورتكم.</p></div><div className="public-meta"><div><small>تاريخ الإصدار</small><strong>{invoice.date}</strong></div><div><small>العميل</small><strong>{client.name}</strong></div></div><div className="public-lines"><div className="public-line head"><span>الوصف</span><span>المبلغ</span></div>{invoice.items.map((item) => <div className="public-line" key={item}><span>{item}</span><strong>{money(invoice.total)}</strong></div>)}</div><div className="public-total"><span>الإجمالي المتبقي</span><strong>{money(invoice.due)}</strong></div><div className="public-footer"><Check size={15} /> رابط آمن ومخصص لهذه الفاتورة من دفتر الزهوب</div></div></div>;
+  const lines = invoice.lines?.length ? invoice.lines : invoice.items.map(name => ({ name, price: invoice.total, qty: 1 }));
+  const previousBalance = invoice.previousBalance ?? 0;
+  const finalDue = previousBalance + invoice.due;
+  return <div className="public-invoice" dir="rtl"><div className="public-card"><div className="public-brand"><div className="brand-mark"><Sparkles size={18} /></div><div><strong>دفتر الزهوب</strong><span>فاتورة إلكترونية</span></div><span className={`status ${invoice.status === "مدفوعة" ? "paid" : "pending"}`}><i />{invoice.status}</span></div><div className="public-intro"><p className="eyebrow">فاتورة رقم {invoice.id}</p><h1>مرحباً {client.name}</h1><p>شكراً لتعاملكم معنا. هذه تفاصيل فاتورتكم.</p></div><div className="public-meta"><div><small>تاريخ الإصدار</small><strong>{invoice.date}</strong></div><div><small>العميل</small><strong>{client.name}</strong></div></div><div className="public-lines"><div className="public-line head"><span>الصنف / الكمية</span><span>السعر</span></div>{lines.map((line, index) => <div className="public-line" key={`${line.name}-${index}`}><span>{line.name} × {line.qty}</span><strong>{money(line.price * line.qty)}</strong></div>)}<div className="public-line summary-line"><span>إجمالي الفاتورة الحالية</span><strong>{money(invoice.total)}</strong></div>{previousBalance > 0 && <div className="public-line previous-line"><span>الحساب السابق</span><strong>{money(previousBalance)}</strong></div>}</div><div className="public-total"><span>الإجمالي المطلوب الآن</span><strong>{money(finalDue)}</strong></div><div className="public-footer"><Check size={15} /> رابط آمن ومخصص لهذه الفاتورة من دفتر الزهوب</div></div></div>;
 }
 
 function NavItem({ icon, text, active, onClick, badge }: { icon: React.ReactNode; text: string; active: boolean; onClick: () => void; badge?: string }) { return <button className={`nav-item ${active ? "active" : ""}`} onClick={onClick}>{icon}<span>{text}</span>{badge && <em>{badge}</em>}</button>; }
