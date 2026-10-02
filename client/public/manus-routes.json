@@ -1,1 +1,1 @@
-{"routes":[{"path":"/","title":"دفتر الزهوب"},{"path":"/invoice/:id","title":"فاتورة إلكترونية"}]}
+{"routes":[{"path":"/","title":"دفتر ديون الدكان"},{"path":"/invoice/:id","title":"فاتورة إلكترونية"}]}
