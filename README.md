@@ -1,14 +1,47 @@
 # دفتر الزهوب — فواتير وديون
 
-React / Express / tRPC / Drizzle starter, adapted from the Sandbox web-db-user template.
+تطبيق React / Express لإدارة العملاء والفواتير والأصناف وسندات القبض ومشاركة الفواتير عبر واتساب.
 
-- `pnpm dev`: development server; honors `PORT` (default 3000).
-- `pnpm build` / `pnpm start`: build and serve `dist/index.js` and `dist/public/`.
-- `pnpm db:migrate`: apply checked-in migrations. `pnpm db:push`: generate and apply new schema changes.
-- `pnpm check` / `pnpm test`: types and application tests.
+## التشغيل
 
-Start with the Webdev skill's default-template guide. Platform login, storage, payments and service contracts live in its shared references; read the relevant capability before extending its helper.
+```bash
+pnpm install
+pnpm check
+pnpm dev
+```
 
-`server/_core/publicConfig.ts` exposes only named public runtime values. Private keys stay server-side. The platform serves managed `/manus-storage/` assets; the application does not register a second proxy.
+لإنشاء نسخة الإنتاج:
 
-Platform configuration is readable and editable through `webdev.config`. Default settings are initial values, not enforced constraints. The agent may modify the files, commands and configuration or follow the flexible guide for another stack.
+```bash
+pnpm build
+pnpm start
+```
+
+## Supabase
+
+ملف الجداول الجاهز موجود في:
+
+```text
+supabase/001_debtbook_schema.sql
+```
+
+شغّله في **Supabase → SQL Editor**.
+
+إعدادات الواجهة موجودة في `client/src/lib/supabase.ts`، ويمكن تخصيصها عبر ملف `.env`:
+
+```env
+VITE_SUPABASE_URL=https://qobwwszmfrxitlibpnws.supabase.co
+VITE_SUPABASE_ANON_KEY=ضع_مفتاح_anon_هنا
+```
+
+مفتاح `anon` عام ومسموح ظهوره في تطبيق المتصفح. **لا تضع مفتاح `service_role` في ملفات `client` أو في GitHub**؛ هذا المفتاح للخادم فقط.
+
+> ملاحظة: جداول SQL مفعّل عليها RLS. لن تسمح بالقراءة والكتابة من المتصفح حتى تضيف سياسات RLS مرتبطة بتسجيل دخول المستخدم. هذا مقصود لحماية بيانات العملاء والفواتير.
+
+## الأوامر
+
+- `pnpm dev`: تشغيل خادم التطوير.
+- `pnpm build`: بناء الواجهة والخادم.
+- `pnpm start`: تشغيل الإنتاج.
+- `pnpm check`: فحص TypeScript.
+- `pnpm test`: تشغيل الاختبارات.
